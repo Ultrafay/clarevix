@@ -30,9 +30,6 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
       realtime: {
         transport: WebSocket,
       },
-      global: {
-        WebSocket,
-      },
     })
   : null;
 
