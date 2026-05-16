@@ -1,0 +1,492 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { PRODUCT_CATEGORIES } from '@lib/types';
+---
+
+<BaseLayout title="Admin Dashboard — Clarevix" hideChrome={true}>
+  <!-- Auth guard: hidden until session check completes -->
+  <div id="adminGate" style="display:none;min-height:100vh">
+    <header class="admin-dash-header">
+      <div class="admin-dash-brand">
+        <span class="brand">Clarevix</span>
+        <span class="label-pill">Admin</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <a href="/" class="admin-icon-btn">View Store</a>
+        <button class="admin-logout-btn" id="logoutBtn">Sign Out</button>
+      </div>
+    </header>
+    <nav class="admin-tabs">
+      <button class="admin-tab active" id="tabProductsBtn" type="button">Products</button>
+      <button class="admin-tab" id="tabOrdersBtn" type="button">Orders</button>
+    </nav>
+
+    <!-- Products tab -->
+    <section class="admin-content" id="adminTabProducts">
+      <div class="admin-toolbar">
+        <h2>Products <span class="count" id="productCount">0</span></h2>
+        <button class="admin-add-btn" id="newProductBtn" type="button">+ New Product</button>
+      </div>
+      <div id="adminProductList"></div>
+    </section>
+
+    <!-- Orders tab -->
+    <section class="admin-content" id="adminTabOrders" style="display:none">
+      <div class="admin-toolbar">
+        <h2>Orders <span class="count" id="orderCount">0</span></h2>
+      </div>
+      <div id="adminOrdersList"></div>
+    </section>
+  </div>
+
+  <!-- Loading state -->
+  <div
+    id="adminLoading"
+    style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text-muted)"
+  >
+    <span class="loader"></span> Verifying session...
+  </div>
+
+  <!-- Product form modal -->
+  <div class="product-form-modal" id="productFormModal" role="dialog" aria-modal="true">
+    <div class="product-form-box">
+      <div class="product-form-header">
+        <h2 id="productFormTitle">New Product</h2>
+        <button class="checkout-close" id="closeProductFormBtn" type="button" aria-label="Close">
+          ✕
+        </button>
+      </div>
+      <form id="productForm">
+        <div class="product-form-body">
+          <input type="hidden" id="pfId" />
+
+          <div class="form-group">
+            <label>Product Image</label>
+            <div class="image-upload" id="imageUploadBox">
+              <input type="file" id="pfImageFile" accept="image/*" />
+              <button type="button" class="image-remove-btn" id="removeImageBtn">✕</button>
+              <img class="image-upload-preview" id="pfImagePreview" alt="" />
+              <div class="upload-hint">
+                <strong>Upload Photo</strong>
+                JPG, PNG or WebP · Max 5MB · Square works best
+              </div>
+            </div>
+            <input type="hidden" id="pfImageUrl" />
+          </div>
+
+          <div class="form-group">
+            <label for="pfName">Product Name *</label>
+            <input type="text" id="pfName" required placeholder="e.g. Vix Active Serum" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pfCategory">Category *</label>
+              <select id="pfCategory" required>
+                <option value="">Select...</option>
+                {PRODUCT_CATEGORIES.map((c) => <option value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pfPrice">Price (PKR) *</label>
+              <input type="number" id="pfPrice" required min="1" placeholder="2400" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="pfSubtitle">Subtitle</label>
+            <input type="text" id="pfSubtitle" placeholder="Daily Cleanse · Face" />
+          </div>
+
+          <div class="form-group">
+            <label for="pfDescription">Description</label>
+            <textarea id="pfDescription" placeholder="Brief description shown on product card..."
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="pfBadge">Badge (optional)</label>
+              <select id="pfBadge">
+                <option value="">No badge</option>
+                <option value="Bestseller">Bestseller</option>
+                <option value="New">New</option>
+                <option value="SPF 50">SPF 50</option>
+                <option value="Limited">Limited</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pfDisplayOrder">Display Order</label>
+              <input type="number" id="pfDisplayOrder" value="0" min="0" />
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <label>In Stock</label>
+            <div class="toggle-switch on" id="pfInStockToggle" role="switch" tabindex="0"></div>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:auto">
+              Toggle off to hide from store
+            </span>
+          </div>
+
+          <div class="toggle-row">
+            <label>Featured on Homepage</label>
+            <div class="toggle-switch" id="pfFeaturedToggle" role="switch" tabindex="0"></div>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:auto">
+              Show in bestsellers grid
+            </span>
+          </div>
+        </div>
+        <div class="product-form-footer">
+          <button type="button" class="btn-cancel" id="cancelProductFormBtn">Cancel</button>
+          <button type="submit" class="btn-save" id="saveProductBtn">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { supabase, isSupabaseConfigured } from '@lib/supabase';
+  import { escapeHtml, showToast, formatDate, formatPkr } from '@lib/utils';
+  import type { Product, ProductInput, Order, OrderItem } from '@lib/types';
+
+  /* ── Bootstrap ────────────────────────────────────────────── */
+  if (!isSupabaseConfigured || !supabase) {
+    const loading = document.getElementById('adminLoading');
+    if (loading) {
+      loading.innerHTML =
+        '<div style="text-align:center;max-width:480px;padding:32px">' +
+        '<h3 style="font-family:var(--font-display);font-size:24px;margin-bottom:14px;color:var(--text-primary)">Supabase not configured</h3>' +
+        '<p style="color:var(--text-secondary);line-height:1.6">Add <code>PUBLIC_SUPABASE_URL</code> and <code>PUBLIC_SUPABASE_ANON_KEY</code> to your <code>.env</code> file, then redeploy.</p>' +
+        '</div>';
+    }
+  } else {
+    // Top-level await is fine inside Astro <script> (esm bundling)
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      window.location.replace('/admin/login');
+    } else {
+      document.getElementById('adminLoading')!.style.display = 'none';
+      document.getElementById('adminGate')!.style.display = 'block';
+      initDashboard();
+    }
+  }
+
+  /* ── Dashboard initialization ─────────────────────────────── */
+  function initDashboard() {
+    if (!supabase) return;
+
+    /* Tabs */
+    const tabProductsBtn = document.getElementById('tabProductsBtn')!;
+    const tabOrdersBtn = document.getElementById('tabOrdersBtn')!;
+    const tabProducts = document.getElementById('adminTabProducts')!;
+    const tabOrders = document.getElementById('adminTabOrders')!;
+
+    function switchTab(tab: 'products' | 'orders') {
+      tabProductsBtn.classList.toggle('active', tab === 'products');
+      tabOrdersBtn.classList.toggle('active', tab === 'orders');
+      tabProducts.style.display = tab === 'products' ? 'block' : 'none';
+      tabOrders.style.display = tab === 'orders' ? 'block' : 'none';
+      if (tab === 'products') renderProducts();
+      if (tab === 'orders') renderOrders();
+    }
+    tabProductsBtn.addEventListener('click', () => switchTab('products'));
+    tabOrdersBtn.addEventListener('click', () => switchTab('orders'));
+
+    /* Logout */
+    document.getElementById('logoutBtn')!.addEventListener('click', async () => {
+      await supabase!.auth.signOut();
+      window.location.replace('/');
+    });
+
+    /* ── PRODUCTS ──────────────────────────────────────────── */
+    const productList = document.getElementById('adminProductList')!;
+    const productCount = document.getElementById('productCount')!;
+
+    async function renderProducts() {
+      productList.innerHTML =
+        '<div class="empty-state"><span class="loader"></span> Loading products…</div>';
+      const { data, error } = await supabase!
+        .from('products')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: false });
+      if (error) {
+        productList.innerHTML = `<div class="empty-state"><h3>Could not load</h3><p>${escapeHtml(error.message)}</p></div>`;
+        return;
+      }
+      const products = (data ?? []) as Product[];
+      productCount.textContent = String(products.length);
+      if (!products.length) {
+        productList.innerHTML =
+          '<div class="empty-state"><h3>No products yet</h3><p>Click "+ New Product" to add your first one.</p></div>';
+        return;
+      }
+      productList.innerHTML =
+        '<div class="admin-product-table">' +
+        '<div class="admin-product-row head">' +
+        '<div></div><div>Product</div><div class="col-cat">Category</div>' +
+        '<div>Price</div><div class="col-status">Status</div><div></div>' +
+        '</div>' +
+        products
+          .map((p) => {
+            const thumb = p.image_url
+              ? `<img src="${escapeHtml(p.image_url)}" alt="">`
+              : '<span style="color:var(--text-muted);font-size:10px">No image</span>';
+            const featured = p.is_featured
+              ? '<span style="font-size:9px;color:var(--gold);letter-spacing:0.18em;margin-left:6px">★ FEATURED</span>'
+              : '';
+            return `<div class="admin-product-row">
+              <div class="admin-product-thumb">${thumb}</div>
+              <div>
+                <div class="admin-prod-name">${escapeHtml(p.name)}${featured}</div>
+                <div class="admin-prod-cat">${escapeHtml(p.category)}${p.subtitle ? ' · ' + escapeHtml(p.subtitle) : ''}</div>
+              </div>
+              <div class="admin-prod-cat col-cat">${escapeHtml(p.category)}</div>
+              <div class="admin-prod-price">${formatPkr(p.price_pkr)}</div>
+              <div class="col-status">
+                <span class="admin-prod-status ${p.in_stock ? 'in-stock' : 'out'}">
+                  ${p.in_stock ? 'In Stock' : 'Hidden'}
+                </span>
+              </div>
+              <div class="admin-prod-actions">
+                <button class="admin-icon-btn" data-edit="${escapeHtml(p.id)}">Edit</button>
+                <button class="admin-icon-btn danger" data-delete="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}">Delete</button>
+              </div>
+            </div>`;
+          })
+          .join('') +
+        '</div>';
+    }
+
+    /* Delegated handlers for edit/delete */
+    productList.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const editBtn = target.closest('[data-edit]') as HTMLButtonElement | null;
+      const delBtn = target.closest('[data-delete]') as HTMLButtonElement | null;
+      if (editBtn) openProductForm(editBtn.dataset.edit);
+      if (delBtn) {
+        const id = delBtn.dataset.delete!;
+        const name = delBtn.dataset.name || 'this product';
+        if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+        const { error } = await supabase!.from('products').delete().eq('id', id);
+        if (error) {
+          showToast('Delete failed: ' + error.message);
+          return;
+        }
+        showToast('Product deleted');
+        renderProducts();
+      }
+    });
+
+    /* ── Product form modal ────────────────────────────────── */
+    const modal = document.getElementById('productFormModal')!;
+    const formTitle = document.getElementById('productFormTitle')!;
+    const form = document.getElementById('productForm') as HTMLFormElement;
+    const saveBtn = document.getElementById('saveProductBtn') as HTMLButtonElement;
+    const imageBox = document.getElementById('imageUploadBox')!;
+    const imagePreview = document.getElementById('pfImagePreview') as HTMLImageElement;
+    const imageFile = document.getElementById('pfImageFile') as HTMLInputElement;
+    const imageUrlInput = document.getElementById('pfImageUrl') as HTMLInputElement;
+    const inStockToggle = document.getElementById('pfInStockToggle')!;
+    const featuredToggle = document.getElementById('pfFeaturedToggle')!;
+
+    let editingId: string | null = null;
+
+    document.getElementById('newProductBtn')!.addEventListener('click', () => openProductForm());
+    document.getElementById('closeProductFormBtn')!.addEventListener('click', closeProductForm);
+    document.getElementById('cancelProductFormBtn')!.addEventListener('click', closeProductForm);
+
+    /* Toggle switches */
+    inStockToggle.addEventListener('click', () => inStockToggle.classList.toggle('on'));
+    featuredToggle.addEventListener('click', () => featuredToggle.classList.toggle('on'));
+
+    async function openProductForm(id?: string) {
+      editingId = id ?? null;
+      form.reset();
+      imageBox.classList.remove('has-image');
+      imageUrlInput.value = '';
+      imagePreview.src = '';
+      inStockToggle.classList.add('on');
+      featuredToggle.classList.remove('on');
+
+      if (id) {
+        formTitle.textContent = 'Edit Product';
+        const { data, error } = await supabase!.from('products').select('*').eq('id', id).single();
+        if (error || !data) {
+          showToast('Could not load product');
+          return;
+        }
+        const p = data as Product;
+        (document.getElementById('pfId') as HTMLInputElement).value = p.id;
+        (document.getElementById('pfName') as HTMLInputElement).value = p.name;
+        (document.getElementById('pfCategory') as HTMLSelectElement).value = p.category;
+        (document.getElementById('pfPrice') as HTMLInputElement).value = String(p.price_pkr);
+        (document.getElementById('pfSubtitle') as HTMLInputElement).value = p.subtitle ?? '';
+        (document.getElementById('pfDescription') as HTMLTextAreaElement).value =
+          p.description ?? '';
+        (document.getElementById('pfBadge') as HTMLSelectElement).value = p.badge ?? '';
+        (document.getElementById('pfDisplayOrder') as HTMLInputElement).value = String(
+          p.display_order ?? 0
+        );
+        imageUrlInput.value = p.image_url ?? '';
+        inStockToggle.classList.toggle('on', p.in_stock !== false);
+        featuredToggle.classList.toggle('on', !!p.is_featured);
+        if (p.image_url) {
+          imagePreview.src = p.image_url;
+          imageBox.classList.add('has-image');
+        }
+      } else {
+        formTitle.textContent = 'New Product';
+      }
+
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeProductForm() {
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+      editingId = null;
+    }
+
+    /* Image upload */
+    imageFile.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image too large — max 5MB');
+        return;
+      }
+      imagePreview.src = URL.createObjectURL(file);
+      imageBox.classList.add('has-image');
+      showToast('Uploading image...');
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const fileName = `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { data, error } = await supabase!.storage
+        .from('product-images')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (error) {
+        showToast('Upload failed: ' + error.message);
+        imageBox.classList.remove('has-image');
+        return;
+      }
+      const { data: urlData } = supabase!.storage.from('product-images').getPublicUrl(data.path);
+      imageUrlInput.value = urlData.publicUrl;
+      imagePreview.src = urlData.publicUrl;
+      showToast('Image uploaded ✓');
+    });
+
+    document.getElementById('removeImageBtn')!.addEventListener('click', (e) => {
+      e.stopPropagation();
+      imageUrlInput.value = '';
+      imagePreview.src = '';
+      imageFile.value = '';
+      imageBox.classList.remove('has-image');
+    });
+
+    /* Save product */
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="loader"></span>Saving...';
+
+      const payload: ProductInput = {
+        name: (document.getElementById('pfName') as HTMLInputElement).value.trim(),
+        category: (document.getElementById('pfCategory') as HTMLSelectElement)
+          .value as Product['category'],
+        subtitle: (document.getElementById('pfSubtitle') as HTMLInputElement).value.trim() || null,
+        price_pkr: parseInt((document.getElementById('pfPrice') as HTMLInputElement).value, 10),
+        description:
+          (document.getElementById('pfDescription') as HTMLTextAreaElement).value.trim() || null,
+        badge: ((document.getElementById('pfBadge') as HTMLSelectElement).value ||
+          null) as Product['badge'],
+        image_url: imageUrlInput.value || null,
+        display_order:
+          parseInt((document.getElementById('pfDisplayOrder') as HTMLInputElement).value, 10) || 0,
+        in_stock: inStockToggle.classList.contains('on'),
+        is_featured: featuredToggle.classList.contains('on'),
+      };
+
+      const { error } = editingId
+        ? await supabase!.from('products').update(payload).eq('id', editingId)
+        : await supabase!.from('products').insert(payload);
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Product';
+
+      if (error) {
+        showToast('Save failed: ' + error.message);
+        return;
+      }
+      showToast(editingId ? 'Product updated ✓' : 'Product added ✓');
+      closeProductForm();
+      renderProducts();
+    });
+
+    /* ── ORDERS ────────────────────────────────────────────── */
+    const ordersList = document.getElementById('adminOrdersList')!;
+    const orderCount = document.getElementById('orderCount')!;
+
+    async function renderOrders() {
+      ordersList.innerHTML =
+        '<div class="empty-state"><span class="loader"></span> Loading orders…</div>';
+      const { data, error } = await supabase!
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        ordersList.innerHTML = `<div class="empty-state"><h3>Could not load</h3><p>${escapeHtml(error.message)}</p></div>`;
+        return;
+      }
+      const orders = (data ?? []) as Order[];
+      orderCount.textContent = String(orders.length);
+      if (!orders.length) {
+        ordersList.innerHTML =
+          '<div class="empty-state"><h3>🌿 No orders yet</h3><p>Orders will appear here when customers check out.</p></div>';
+        return;
+      }
+      ordersList.innerHTML = orders
+        .map(
+          (o, idx) => `
+        <div class="admin-order-card">
+          <div class="admin-order-head" data-toggle="order${idx}">
+            <div>
+              <span class="admin-order-id">${escapeHtml(o.order_id)}</span>
+              <span class="admin-order-meta" style="margin-left:12px">${formatDate(o.created_at)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:13px;font-weight:700;color:var(--sage)">${formatPkr(o.total_pkr)}</span>
+              <span class="admin-order-status">${escapeHtml(o.status)}</span>
+            </div>
+          </div>
+          <div class="admin-order-body" id="order${idx}">
+            <div class="admin-order-grid">
+              <div><p class="admin-field-label">Customer</p><p class="admin-field-val">${escapeHtml(o.customer_name)}</p></div>
+              <div><p class="admin-field-label">Phone</p><p class="admin-field-val">${escapeHtml(o.customer_phone)}</p></div>
+              <div><p class="admin-field-label">Email</p><p class="admin-field-val">${escapeHtml(o.customer_email ?? '—')}</p></div>
+              <div><p class="admin-field-label">Payment</p><p class="admin-field-val">${escapeHtml(o.payment_method)}</p></div>
+              <div style="grid-column:1/-1"><p class="admin-field-label">Delivery Address</p><p class="admin-field-val">${escapeHtml(o.address)}</p></div>
+              ${o.notes ? `<div style="grid-column:1/-1"><p class="admin-field-label">Notes</p><p class="admin-field-val">${escapeHtml(o.notes)}</p></div>` : ''}
+            </div>
+            <ul class="admin-items-list">
+              ${(o.items as OrderItem[]).map((i) => `<li><span>${escapeHtml(i.name)}${i.qty > 1 ? ' × ' + i.qty : ''}</span><span>${escapeHtml(i.price)}</span></li>`).join('')}
+            </ul>
+            <div class="admin-total-row"><span>Total</span><span>${formatPkr(o.total_pkr)}</span></div>
+          </div>
+        </div>`
+        )
+        .join('');
+    }
+
+    ordersList.addEventListener('click', (e) => {
+      const head = (e.target as HTMLElement).closest('[data-toggle]') as HTMLElement | null;
+      if (!head?.dataset.toggle) return;
+      document.getElementById(head.dataset.toggle)?.classList.toggle('open');
+    });
+
+    /* Initial render */
+    renderProducts();
+  }
+</script>

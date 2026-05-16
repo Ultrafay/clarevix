@@ -1,0 +1,379 @@
+---
+import '../styles/global.css';
+import Nav from '@components/Nav.astro';
+import MobileNav from '@components/MobileNav.astro';
+import Footer from '@components/Footer.astro';
+import Cart from '@components/Cart.astro';
+import CheckoutModal from '@components/CheckoutModal.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  hideChrome?: boolean; // true for admin pages → skip nav/footer/cart
+}
+
+const {
+  title,
+  description = "Clarevix — Pakistan's Clean Luxury Skincare. Clinically active formulations with apothecary elegance.",
+  hideChrome = false,
+} = Astro.props;
+
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://clarevix.com';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#1E1A17" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={siteUrl} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <title>{title}</title>
+    <script is:inline>
+      // Apply persisted theme before paint to avoid flash
+      try {
+        if (localStorage.getItem('clarevix-theme') === 'light') {
+          document.documentElement.classList.add('light');
+        }
+      } catch (e) {
+        /* no-op */
+      }
+    </script>
+  </head>
+  <body>
+    <div class="toast" id="toast"></div>
+
+    {
+      !hideChrome && (
+        <>
+          <Nav />
+          <MobileNav />
+          <Cart />
+          <CheckoutModal />
+        </>
+      )
+    }
+
+    <slot />
+
+    {!hideChrome && <Footer />}
+  </body>
+</html>
+
+<script>
+  import { cart, addToCart, changeQty, removeFromCart, clearCart, parsePkr } from '@lib/cart';
+  import { escapeHtml, showToast, generateOrderId, formatPkr } from '@lib/utils';
+  import { supabase, isSupabaseConfigured } from '@lib/supabase';
+  import type { CartItem, PaymentMethod } from '@lib/types';
+
+  /* ── Cart UI ─────────────────────────────────────────────── */
+  const cartBadge = document.getElementById('cartBadge');
+  const cartCountMobile = document.getElementById('cartCountMobile');
+  const cartContent = document.getElementById('cartContent');
+
+  function renderCart(items: readonly CartItem[]) {
+    if (!cartContent) return;
+    if (!items.length) {
+      cartContent.innerHTML =
+        '<p class="cart-empty">Your bag is beautifully empty.<br>Explore our collection to begin.</p>';
+      return;
+    }
+    const total = items.reduce((s, i) => s + parsePkr(i.price) * i.qty, 0);
+    cartContent.innerHTML =
+      '<ul class="cart-items">' +
+      items
+        .map(
+          (i) =>
+            `<li class="cart-item">
+                  <div class="cart-item-img">🌿</div>
+                  <div class="cart-item-info">
+                    <p class="cart-item-name">${escapeHtml(i.name)}</p>
+                    <p class="cart-item-price">${escapeHtml(i.price)}</p>
+                    <div class="cart-qty">
+                      <button class="cart-qty-btn" data-name="${escapeHtml(i.name)}" data-delta="-1" aria-label="Decrease">−</button>
+                      <span class="cart-qty-num">${i.qty}</span>
+                      <button class="cart-qty-btn" data-name="${escapeHtml(i.name)}" data-delta="1" aria-label="Increase">+</button>
+                      <button class="cart-item-remove" data-name="${escapeHtml(i.name)}">Remove</button>
+                    </div>
+                  </div>
+                </li>`
+        )
+        .join('') +
+      '</ul>' +
+      `<div class="cart-total"><span>Subtotal</span><span>${formatPkr(total)}</span></div>` +
+      '<button class="checkout-btn" id="checkoutBtn">Checkout →</button>';
+  }
+
+  cart.subscribe((items) => {
+    const count = items.reduce((s, i) => s + i.qty, 0);
+    if (cartBadge) {
+      cartBadge.textContent = String(count);
+      cartBadge.classList.toggle('show', count > 0);
+      if (count > 0) {
+        cartBadge.classList.add('bump');
+        window.setTimeout(() => cartBadge.classList.remove('bump'), 400);
+      }
+    }
+    if (cartCountMobile) cartCountMobile.textContent = String(count);
+    renderCart(items);
+  });
+
+  /* Add-to-cart from product cards */
+  document.addEventListener('click', (e) => {
+    const trigger = (e.target as HTMLElement).closest('.add-to-cart-trigger') as HTMLElement | null;
+    if (trigger?.dataset.name && trigger.dataset.price) {
+      addToCart(trigger.dataset.name, trigger.dataset.price);
+      openCart();
+    }
+  });
+
+  /* Cart qty / remove / checkout (event delegation) */
+  cartContent?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const qtyBtn = target.closest('.cart-qty-btn') as HTMLButtonElement | null;
+    if (qtyBtn?.dataset.name) {
+      changeQty(qtyBtn.dataset.name, parseInt(qtyBtn.dataset.delta || '0', 10));
+      return;
+    }
+    const removeBtn = target.closest('.cart-item-remove') as HTMLButtonElement | null;
+    if (removeBtn?.dataset.name) removeFromCart(removeBtn.dataset.name);
+    if (target.id === 'checkoutBtn') openCheckout();
+  });
+
+  /* Cart sidebar open/close */
+  const sidebar = document.getElementById('cartSidebar');
+  const cartOverlay = document.getElementById('cartOverlay');
+  function openCart() {
+    sidebar?.classList.add('open');
+    cartOverlay?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeCart() {
+    sidebar?.classList.remove('open');
+    cartOverlay?.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('cartBtn')?.addEventListener('click', openCart);
+  document.getElementById('mobileCartBtn')?.addEventListener('click', () => {
+    closeMobile();
+    openCart();
+  });
+  document.getElementById('cartClose')?.addEventListener('click', closeCart);
+  cartOverlay?.addEventListener('click', closeCart);
+
+  /* ── Mobile menu ─────────────────────────────────────────── */
+  const mobNav = document.getElementById('mobileNav');
+  const mobOverlay = document.getElementById('mobileOverlay');
+  function openMobile() {
+    mobNav?.classList.add('open');
+    mobOverlay?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMobile() {
+    mobNav?.classList.remove('open');
+    mobOverlay?.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('hamburger')?.addEventListener('click', openMobile);
+  document.getElementById('mobileClose')?.addEventListener('click', closeMobile);
+  mobOverlay?.addEventListener('click', closeMobile);
+
+  /* ── Nav scroll state ────────────────────────────────────── */
+  const navbar = document.getElementById('navbar');
+  if (navbar) {
+    const updateNav = () => navbar.classList.toggle('scrolled', window.scrollY > 50);
+    updateNav();
+    window.addEventListener('scroll', updateNav, { passive: true });
+  }
+
+  /* ── Theme toggle ────────────────────────────────────────── */
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    const isLight = document.documentElement.classList.toggle('light');
+    try {
+      localStorage.setItem('clarevix-theme', isLight ? 'light' : 'dark');
+    } catch (e) {
+      /* ignore */
+    }
+  });
+
+  /* ── Fade-in scroll animation ────────────────────────────── */
+  const fadeEls = document.querySelectorAll('.fade-in');
+  if (fadeEls.length && 'IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -80px 0px' }
+    );
+    fadeEls.forEach((el) => observer.observe(el));
+  }
+
+  /* ── Checkout modal ──────────────────────────────────────── */
+  const checkoutModal = document.getElementById('checkoutModal');
+  const checkoutForm = document.getElementById('checkoutForm') as HTMLFormElement | null;
+  const orderSuccess = document.getElementById('orderSuccess');
+
+  function openCheckout() {
+    const items = cart.get();
+    if (!items.length) {
+      showToast('Your cart is empty');
+      return;
+    }
+    renderCheckoutSummary();
+    checkoutModal?.classList.add('open');
+    if (checkoutForm) checkoutForm.style.display = '';
+    orderSuccess?.classList.remove('show');
+  }
+  function closeCheckout() {
+    checkoutModal?.classList.remove('open');
+  }
+  function renderCheckoutSummary() {
+    const items = cart.get();
+    const list = document.getElementById('coSummaryItems');
+    const totalEl = document.getElementById('coSummaryTotal');
+    if (!list || !totalEl) return;
+    list.innerHTML = items
+      .map(
+        (i) =>
+          `<li class="co-summary-item"><span>${escapeHtml(i.name)}${
+            i.qty > 1 ? ' × ' + i.qty : ''
+          }</span><span>${escapeHtml(i.price)}</span></li>`
+      )
+      .join('');
+    const total = items.reduce((s, i) => s + parsePkr(i.price) * i.qty, 0);
+    totalEl.textContent = formatPkr(total);
+  }
+
+  document.getElementById('checkoutClose')?.addEventListener('click', closeCheckout);
+  document.getElementById('checkoutBackdrop')?.addEventListener('click', closeCheckout);
+  document.getElementById('continueShopping')?.addEventListener('click', () => {
+    closeCheckout();
+    closeCart();
+  });
+
+  /* Payment method selection */
+  const PAY_LABELS: Record<string, PaymentMethod> = {
+    cod: 'Cash on Delivery',
+    easypaisa: 'EasyPaisa',
+    jazzcash: 'JazzCash',
+    card: 'Credit/Debit Card',
+    bank: 'Bank Transfer',
+  };
+
+  document.querySelectorAll('.pay-method').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const method = (btn as HTMLElement).dataset.method;
+      if (!method) return;
+      document.querySelectorAll('.pay-method').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.querySelectorAll('.pay-detail').forEach((d) => d.classList.remove('show'));
+      document.getElementById('detail-' + method)?.classList.add('show');
+      const hidden = document.getElementById('coPayMethod') as HTMLInputElement | null;
+      if (hidden) hidden.value = method;
+    });
+  });
+
+  /* Copy-to-clipboard for payment account numbers */
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const text = (btn as HTMLElement).dataset.copy || '';
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('Copied!');
+      } catch {
+        showToast('Copy failed — please copy manually');
+      }
+    });
+  });
+
+  /* Place order */
+  checkoutForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('placeOrderBtn') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = 'Placing Order...';
+
+    const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+    const name = $('coName').value;
+    const phone = $('coPhone').value;
+    const email = $('coEmail').value;
+    const address = $('coAddress').value;
+    const city = $('coCity').value;
+    const province = $('coProvince').value;
+    const notes = (document.getElementById('coNotes') as HTMLTextAreaElement).value;
+    const payMethodKey = $('coPayMethod').value;
+    const paymentMethod = PAY_LABELS[payMethodKey] || 'Cash on Delivery';
+
+    const items = cart.get();
+    const total = items.reduce((s, i) => s + parsePkr(i.price) * i.qty, 0);
+    const orderId = generateOrderId();
+    const fullAddress = `${address}, ${city}${province ? ', ' + province : ''}`;
+
+    const finishSuccess = () => {
+      if (checkoutForm) checkoutForm.style.display = 'none';
+      orderSuccess?.classList.add('show');
+      const idEl = document.getElementById('orderIdDisplay');
+      if (idEl) idEl.textContent = `Order ID: ${orderId}`;
+      clearCart();
+      btn.disabled = false;
+      btn.textContent = 'Place Order →';
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('orders').insert({
+        order_id: orderId,
+        customer_name: name,
+        customer_phone: phone,
+        customer_email: email || null,
+        address: fullAddress,
+        items,
+        total_pkr: total,
+        payment_method: paymentMethod,
+        notes: notes || null,
+        status: 'New',
+      });
+      if (error) {
+        console.error('Order save failed:', error);
+        showToast('Order saved locally — please contact us with your order ID');
+      }
+      window.setTimeout(finishSuccess, 400);
+    } else {
+      /* Demo mode: save to localStorage */
+      try {
+        const order = {
+          id: orderId,
+          date: new Date().toLocaleString('en-PK'),
+          customer: { name, phone, email: email || '—', address: fullAddress },
+          items,
+          total: formatPkr(total),
+          payment: paymentMethod,
+          notes: notes || '—',
+          status: 'New',
+        };
+        const existing = JSON.parse(localStorage.getItem('clarevix_orders') || '[]');
+        existing.unshift(order);
+        localStorage.setItem('clarevix_orders', JSON.stringify(existing));
+      } catch (err) {
+        console.warn('Could not save order locally', err);
+      }
+      window.setTimeout(finishSuccess, 600);
+    }
+  });
+</script>

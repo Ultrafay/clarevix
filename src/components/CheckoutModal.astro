@@ -1,0 +1,166 @@
+---
+// Checkout modal — handles customer info, payment selection, order placement
+---
+
+<div class="checkout-modal" id="checkoutModal" role="dialog" aria-modal="true">
+  <div class="checkout-backdrop" id="checkoutBackdrop"></div>
+  <div class="checkout-box">
+    <div class="checkout-header">
+      <h2>Complete Your Order</h2>
+      <button class="checkout-close" id="checkoutClose" aria-label="Close">✕</button>
+    </div>
+    <div class="checkout-body">
+      <div class="co-order-summary">
+        <p class="co-summary-title">Order Summary</p>
+        <ul class="co-summary-items" id="coSummaryItems"></ul>
+        <div class="co-summary-total">
+          <span>Total</span>
+          <span id="coSummaryTotal">PKR 0</span>
+        </div>
+      </div>
+
+      <form class="co-form" id="checkoutForm">
+        <span class="co-section-label">Contact Information</span>
+        <div class="co-form-row">
+          <div class="form-group">
+            <label for="coName">Full Name *</label>
+            <input type="text" id="coName" placeholder="Enter Full Name" required />
+          </div>
+          <div class="form-group">
+            <label for="coPhone">Phone *</label>
+            <input type="tel" id="coPhone" placeholder="03XX-XXXXXXX" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="coEmail">Email Address</label>
+          <input type="email" id="coEmail" placeholder="your@email.com" />
+        </div>
+
+        <span class="co-section-label">Delivery Address</span>
+        <div class="form-group">
+          <label for="coAddress">Street Address *</label>
+          <input type="text" id="coAddress" placeholder="House #, Street, Area" required />
+        </div>
+        <div class="co-form-row">
+          <div class="form-group">
+            <label for="coCity">City *</label>
+            <input type="text" id="coCity" placeholder="Karachi" required />
+          </div>
+          <div class="form-group">
+            <label for="coProvince">Province</label>
+            <input type="text" id="coProvince" placeholder="Sindh" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="coNotes">Order Notes</label>
+          <textarea id="coNotes" placeholder="Any special instructions..."></textarea>
+        </div>
+
+        <span class="co-section-label">Payment Method</span>
+        <div class="payment-methods">
+          <button type="button" class="pay-method selected" data-method="cod">
+            <span class="pay-method-icon">💵</span>
+            <span class="pay-method-name">Cash on Delivery</span>
+            <span class="pay-method-sub">Pay at door</span>
+          </button>
+          <button type="button" class="pay-method" data-method="easypaisa">
+            <span class="pay-method-icon">📱</span>
+            <span class="pay-method-name">EasyPaisa</span>
+            <span class="pay-method-sub">Mobile wallet</span>
+          </button>
+          <button type="button" class="pay-method" data-method="jazzcash">
+            <span class="pay-method-icon">💰</span>
+            <span class="pay-method-name">JazzCash</span>
+            <span class="pay-method-sub">Mobile wallet</span>
+          </button>
+          <button type="button" class="pay-method" data-method="card">
+            <span class="pay-method-icon">💳</span>
+            <span class="pay-method-name">Credit/Debit Card</span>
+            <span class="pay-method-sub">Visa / Mastercard</span>
+          </button>
+          <button type="button" class="pay-method" data-method="bank">
+            <span class="pay-method-icon">🏛️</span>
+            <span class="pay-method-name">Bank Transfer</span>
+            <span class="pay-method-sub">Direct deposit</span>
+          </button>
+        </div>
+        <input type="hidden" id="coPayMethod" value="cod" />
+
+        <div class="pay-detail show" id="detail-cod">
+          <p>
+            ✅ Pay with <strong>cash</strong> when your order arrives at your door. No upfront payment
+            needed.
+          </p>
+          <p style="font-size:13px;color:var(--text-muted)">
+            Delivery in 2–5 business days. Our team will confirm via WhatsApp.
+          </p>
+        </div>
+        <div class="pay-detail" id="detail-easypaisa">
+          <p>Send payment to our EasyPaisa account:</p>
+          <div class="acc-number">
+            0300-0000000
+            <button type="button" class="copy-btn" data-copy="0300-0000000">Copy</button>
+          </div>
+          <p style="font-size:13px;color:var(--text-muted)">
+            Account Name: <strong>Clarevix</strong>. Send screenshot to our WhatsApp after transfer.
+          </p>
+        </div>
+        <div class="pay-detail" id="detail-jazzcash">
+          <p>Send payment to our JazzCash account:</p>
+          <div class="acc-number">
+            0300-0000000
+            <button type="button" class="copy-btn" data-copy="0300-0000000">Copy</button>
+          </div>
+          <p style="font-size:13px;color:var(--text-muted)">
+            Account Name: <strong>Clarevix</strong>. Send screenshot to our WhatsApp after transfer.
+          </p>
+        </div>
+        <div class="pay-detail" id="detail-card">
+          <p>
+            💳 <strong>Credit/Debit Card payments</strong> are processed manually. Our team will send
+            you a secure payment link via WhatsApp or email after you place your order.
+          </p>
+        </div>
+        <div class="pay-detail" id="detail-bank">
+          <p>Transfer to our bank account:</p>
+          <div class="acc-number" style="flex-direction:column;align-items:flex-start;gap:6px">
+            <span><strong>Bank:</strong> HBL / Meezan Bank</span>
+            <span><strong>Account Title:</strong> Clarevix</span>
+            <span><strong>IBAN:</strong> PK00XXXX0000000000000000</span>
+            <button
+              type="button"
+              class="copy-btn"
+              data-copy="PK00XXXX0000000000000000"
+              style="align-self:flex-start;margin-top:2px"
+            >
+              Copy IBAN
+            </button>
+          </div>
+          <p style="font-size:13px;color:var(--text-muted)">
+            Send transfer receipt to hello@clarevix.com with your order number.
+          </p>
+        </div>
+
+        <button type="submit" class="place-order-btn" id="placeOrderBtn">Place Order →</button>
+      </form>
+
+      <div class="order-success" id="orderSuccess">
+        <div class="order-success-icon">🌿</div>
+        <h3>Order Placed!</h3>
+        <p>
+          Thank you for choosing Clarevix. Your order has been received and our team will confirm
+          within <strong>24 hours</strong>.
+        </p>
+        <p>You'll receive confirmation on your <strong>phone/email</strong> provided.</p>
+        <p class="order-id" id="orderIdDisplay"></p>
+        <button
+          type="button"
+          id="continueShopping"
+          style="margin-top:24px;background:var(--sage);color:var(--bg-base);border:none;padding:14px 32px;font-family:var(--font-sans);font-size:12px;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;cursor:pointer;"
+        >
+          Continue Shopping
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

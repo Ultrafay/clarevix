@@ -1,0 +1,129 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Contact Us — Clarevix"
+  description="Get in touch with the Clarevix team. We typically respond within 24 hours."
+>
+  <section class="page-hero">
+    <p class="page-hero-eyebrow">Get In Touch</p>
+    <h1>We're Listening</h1>
+    <p>Questions about your skin? Product feedback? Wholesale inquiry? Drop us a note.</p>
+    <span class="page-hero-bg">Hello</span>
+  </section>
+
+  <div class="contact-grid">
+    <div class="contact-info">
+      <h2>Reach Out</h2>
+      <p>
+        We typically respond within 24 hours during business days. For urgent product questions,
+        WhatsApp is fastest.
+      </p>
+
+      <div class="contact-detail">
+        <div class="contact-detail-icon">📧</div>
+        <div>
+          <p class="contact-detail-label">Email</p>
+          <p class="contact-detail-val">hello@clarevix.com</p>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">💬</div>
+        <div>
+          <p class="contact-detail-label">WhatsApp</p>
+          <p class="contact-detail-val">+92 300 0000000</p>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">⏰</div>
+        <div>
+          <p class="contact-detail-label">Hours</p>
+          <p class="contact-detail-val">Mon–Sat · 10am–7pm PKT</p>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-detail-icon">📍</div>
+        <div>
+          <p class="contact-detail-label">Studio</p>
+          <p class="contact-detail-val">Karachi, Pakistan</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-form-wrap">
+      <form id="contactForm">
+        <div class="form-group">
+          <label for="cName">Name *</label>
+          <input type="text" id="cName" required />
+        </div>
+        <div class="form-group">
+          <label for="cEmail">Email *</label>
+          <input type="email" id="cEmail" required />
+        </div>
+        <div class="form-group">
+          <label for="cSubject">Subject</label>
+          <select id="cSubject">
+            <option value="general">General Inquiry</option>
+            <option value="order">Order Question</option>
+            <option value="wholesale">Wholesale / Partnership</option>
+            <option value="press">Press / Media</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="cMessage">Message *</label>
+          <textarea id="cMessage" required rows="5"></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Send Message →</button>
+      </form>
+    </div>
+  </div>
+
+  <section class="location-bar">
+    <div class="location-bar-inner">
+      <div class="location-item">
+        <span class="location-item-icon">🚚</span>
+        <div>
+          <p class="location-label">Delivery</p>
+          <p class="location-val">All Pakistan · 2–5 days</p>
+        </div>
+      </div>
+      <div class="location-item">
+        <span class="location-item-icon">💳</span>
+        <div>
+          <p class="location-label">Payment</p>
+          <p class="location-val">COD · EasyPaisa · JazzCash · Card</p>
+        </div>
+      </div>
+      <div class="location-item">
+        <span class="location-item-icon">↩️</span>
+        <div>
+          <p class="location-label">Returns</p>
+          <p class="location-val">7-day satisfaction guarantee</p>
+        </div>
+      </div>
+      <div class="location-item">
+        <span class="location-item-icon">🔒</span>
+        <div>
+          <p class="location-label">Secure</p>
+          <p class="location-val">SSL · Encrypted checkout</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  document.getElementById('contactForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.textContent = '✨ Message sent — we will respond within 24 hours.';
+      toast.classList.add('show');
+      window.setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    form.reset();
+  });
+</script>

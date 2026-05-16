@@ -1,0 +1,62 @@
+---
+import BottleSvg from './BottleSvg.astro';
+import type { UiProduct } from '@lib/types';
+
+interface Props {
+  product: UiProduct;
+  variant?: 'compact' | 'full';
+}
+
+const { product, variant = 'compact' } = Astro.props;
+const cardClass = variant === 'full' ? 'prod-card-full' : 'prod-card';
+---
+
+<button
+  type="button"
+  class:list={[cardClass, 'add-to-cart-trigger']}
+  data-name={product.name}
+  data-price={product.price}
+>
+  <div class="prod-img-wrap">
+    {
+      product.image ? (
+        <img src={product.image} alt={product.name} loading="lazy" />
+      ) : (
+        <BottleSvg category={product.cat} />
+      )
+    }
+    {
+      product.badge && (
+        <div
+          class="prod-badge"
+          style={product.badge === 'SPF 50' ? 'background:var(--gold);color:var(--bg-base)' : ''}
+        >
+          {product.badge}
+        </div>
+      )
+    }
+    <div class="prod-overlay">
+      <span class="prod-overlay-btn">Add to Bag</span>
+    </div>
+  </div>
+  <div class="prod-info">
+    {product.sub && <p class="prod-category">{product.sub}</p>}
+    <h3 class="prod-name">{product.name}</h3>
+    {product.desc && <p class="prod-desc">{product.desc}</p>}
+    <div class="prod-footer">
+      <span class="prod-price">{product.price}</span>
+      <span class="prod-add">Add to Bag</span>
+    </div>
+  </div>
+</button>
+
+<style>
+  .add-to-cart-trigger {
+    text-align: left;
+    width: 100%;
+    border: none;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+  }
+</style>

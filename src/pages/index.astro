@@ -1,0 +1,234 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import ProductCard from '@components/ProductCard.astro';
+import BottleSvg from '@components/BottleSvg.astro';
+import { fetchProducts } from '@lib/supabase';
+import { SEED_PRODUCTS } from '@lib/seed-products';
+
+const dbProducts = await fetchProducts();
+const products = dbProducts.length ? dbProducts : SEED_PRODUCTS;
+
+const featured = products.filter((p) => p.isFeatured).slice(0, 3);
+const featuredFallback = featured.length ? featured : products.slice(0, 3);
+
+const hairProducts = products
+  .filter((p) => p.cat === 'Shampoo' || p.cat === 'Oil' || p.cat === 'Tonic')
+  .slice(0, 4);
+---
+
+<BaseLayout title="Clarevix — Pakistan's Clean Luxury Skincare">
+  <section class="hero">
+    <div class="hero-left">
+      <span class="hero-bg-text">Clarevix</span>
+      <div class="hero-content">
+        <p class="hero-eyebrow">Clean Luxury Skincare · Pakistan</p>
+        <h1>
+          Skin <em>clarity</em>,<br />
+          rooted in <em>care</em>.
+        </h1>
+        <p class="hero-sub">
+          Clinically active formulations crafted with botanical precision. Visible results that
+          respect your skin's natural balance.
+        </p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="/products">Shop Collection</a>
+          <a class="btn-outline" href="/certificates">Our Standards</a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="bottle">
+        <BottleSvg category="Serum" />
+        <span class="bottle-label">Vix Active Serum</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="marquee-bar">
+    <div class="marquee-track">
+      {
+        Array.from({ length: 2 }).map(() => (
+          <>
+            <span class="marquee-item">Free Delivery on Orders Over PKR 5,000</span>
+            <span class="marquee-item">Cash on Delivery Available</span>
+            <span class="marquee-item">Dermatologically Tested</span>
+            <span class="marquee-item">Cruelty Free · Vegan Formulas</span>
+            <span class="marquee-item">Trusted by Thousands in Pakistan</span>
+          </>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="section fade-in">
+    <p class="label">Featured Products</p>
+    <div class="featured-grid">
+      {featuredFallback.map((p) => <ProductCard product={p} />)}
+    </div>
+  </div>
+
+  <section class="brand-strip fade-in">
+    <p class="label" style="justify-content:center">The Clarevix Philosophy</p>
+    <p class="brand-strip-quote">
+      Clean science meets <span>quiet apothecary elegance.</span> Every formulation honours your skin's
+      intelligence.
+    </p>
+    <div class="brand-pillars">
+      <div class="brand-pillar">
+        <p class="brand-pillar-num">01</p>
+        <p class="brand-pillar-name">Active Botanicals</p>
+        <p class="brand-pillar-desc">
+          Plant-derived actives at clinically meaningful concentrations.
+        </p>
+      </div>
+      <div class="brand-pillar">
+        <p class="brand-pillar-num">02</p>
+        <p class="brand-pillar-name">Barrier-First</p>
+        <p class="brand-pillar-desc">
+          Formulations that strengthen rather than strip the skin's microbiome.
+        </p>
+      </div>
+      <div class="brand-pillar">
+        <p class="brand-pillar-num">03</p>
+        <p class="brand-pillar-name">Locally Made</p>
+        <p class="brand-pillar-desc">
+          Crafted in Pakistan with global-grade lab standards and quality control.
+        </p>
+      </div>
+      <div class="brand-pillar">
+        <p class="brand-pillar-num">04</p>
+        <p class="brand-pillar-name">Conscious Beauty</p>
+        <p class="brand-pillar-desc">
+          Cruelty-free, vegan formulas. Glass packaging. Zero greenwashing.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="section fade-in">
+    <p class="label">Hair Care Collection</p>
+    <div class="bestsellers-grid">
+      {
+        hairProducts.length ? (
+          hairProducts.map((p) => <ProductCard product={p} />)
+        ) : (
+          <p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:40px 0">
+            Hair care collection coming soon.
+          </p>
+        )
+      }
+    </div>
+  </div>
+
+  <section class="ingredients fade-in">
+    <div class="ingr-inner">
+      <p class="label">Hero Ingredients</p>
+      <div class="ingr-grid">
+        <div class="ingr-card">
+          <div class="ingr-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2L4 6V12C4 16.5 7 20.5 12 22C17 20.5 20 16.5 20 12V6L12 2Z"
+                stroke="#8FAF8A"
+                stroke-width="1.5"
+                fill="none"></path>
+              <circle cx="12" cy="11" r="2" fill="#8FAF8A"></circle>
+            </svg>
+          </div>
+          <h3 class="ingr-name">Niacinamide 5%</h3>
+          <p class="ingr-desc">
+            Smooths pores, controls excess oil, and improves uneven tone — gentle enough for daily
+            use.
+          </p>
+        </div>
+        <div class="ingr-card">
+          <div class="ingr-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="#8FAF8A" stroke-width="1.5"></circle>
+              <path d="M12 6V18M6 12H18" stroke="#8FAF8A" stroke-width="1.5"></path>
+            </svg>
+          </div>
+          <h3 class="ingr-name">Hyaluronic Acid</h3>
+          <p class="ingr-desc">
+            Multi-weight hydration that holds 1000× its weight in water. Plump, supple, dewy.
+          </p>
+        </div>
+        <div class="ingr-card">
+          <div
+            class="ingr-icon"
+            style="background:rgba(196,168,130,0.1);border-color:rgba(196,168,130,0.3)"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2C12 2 8 8 8 12C8 14.2 9.8 16 12 16C14.2 16 16 14.2 16 12C16 8 12 2 12 2Z"
+                stroke="#C4A882"
+                stroke-width="1.5"
+                fill="none"></path>
+              <path d="M12 16V22" stroke="#C4A882" stroke-width="1.5"></path>
+            </svg>
+          </div>
+          <h3 class="ingr-name">Vitamin C (15%)</h3>
+          <p class="ingr-desc">
+            Stabilised L-ascorbic acid with ferulic acid. Brightens, evens tone, defends against
+            damage.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section fade-in">
+    <p class="label">From Our Community</p>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <p class="testi-stars">★★★★★</p>
+        <p class="testi-text">
+          "My skin has never looked this clear. The Active Serum is a game-changer — visible results
+          in two weeks."
+        </p>
+        <p class="testi-author">Ayesha M. · Karachi</p>
+      </div>
+      <div class="testi-card">
+        <p class="testi-stars">★★★★★</p>
+        <p class="testi-text">
+          "Finally, a Pakistani brand that takes formulation seriously. The packaging alone feels
+          like luxury."
+        </p>
+        <p class="testi-author">Sara K. · Lahore</p>
+      </div>
+      <div class="testi-card">
+        <p class="testi-stars">★★★★★</p>
+        <p class="testi-text">
+          "The Clare-Barrier Moisturizer healed my sensitive skin. I trust Clarevix completely now."
+        </p>
+        <p class="testi-author">Hina A. · Islamabad</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="newsletter fade-in">
+    <h2>Join the Ritual</h2>
+    <p>
+      Subscribe for early access to new releases, exclusive offers, and skincare wisdom from our
+      lab.
+    </p>
+    <form class="newsletter-form" id="newsletterForm">
+      <input type="email" placeholder="Your email address" required />
+      <button type="submit">Subscribe</button>
+    </form>
+  </section>
+</BaseLayout>
+
+<script>
+  document.getElementById('newsletterForm')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = (e.target as HTMLFormElement).querySelector('input') as HTMLInputElement;
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.textContent = '✨ Welcome to the ritual.';
+      toast.classList.add('show');
+      window.setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    input.value = '';
+  });
+</script>

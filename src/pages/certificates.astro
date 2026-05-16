@@ -1,0 +1,119 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+
+const certificates = [
+  {
+    name: 'ISO 22716 Certified',
+    desc: 'Good Manufacturing Practices for cosmetic products. International quality assurance for every batch.',
+    badge: 'CERTIFIED',
+  },
+  {
+    name: 'GMP Compliant',
+    desc: 'Manufactured to pharmaceutical-grade Good Manufacturing Practice standards in our PSB-registered facility.',
+    badge: 'PSB-REG.',
+  },
+  {
+    name: 'Cruelty Free',
+    desc: 'Never tested on animals. Certified by Leaping Bunny Pakistan. No animal-derived ingredients in any formula.',
+    badge: 'PETA + LB',
+  },
+  {
+    name: 'Halal Certified',
+    desc: 'Certified halal by the Pakistan Halal Authority. All ingredients are reviewed for compliance.',
+    badge: 'PHA',
+  },
+  {
+    name: 'Dermatologist Tested',
+    desc: 'Clinical patch testing completed on every formula. Independent dermatologist sign-off before launch.',
+    badge: 'CLINICAL',
+  },
+  {
+    name: 'Vegan Formula',
+    desc: 'Plant-based and synthetically derived actives only. No animal-derived ingredients or by-products.',
+    badge: 'VEGAN',
+  },
+];
+
+const standards = [
+  {
+    num: '01',
+    name: 'Active Concentrations',
+    desc: 'Every active is dosed at the clinically meaningful concentration shown in peer-reviewed research — not pixie dust.',
+  },
+  {
+    num: '02',
+    name: 'Stable Formulations',
+    desc: 'Stability tested at 25°C, 40°C, and 4°C for 3 months minimum before release. We test in Karachi heat.',
+  },
+  {
+    num: '03',
+    name: 'Allergen Transparency',
+    desc: 'Full ingredient INCI lists with allergen flags. No hidden fragrance or essential oils unless explicitly labelled.',
+  },
+  {
+    num: '04',
+    name: 'Glass Packaging',
+    desc: 'UV-protected amber glass for sensitive actives. Recyclable. No plastic where the formula deserves better.',
+  },
+];
+---
+
+<BaseLayout
+  title="Certificates & Standards — Clarevix"
+  description="The certifications, standards, and quality controls behind every Clarevix product."
+>
+  <section class="page-hero">
+    <p class="page-hero-eyebrow">Trust · Transparency</p>
+    <h1>Certificates & Standards</h1>
+    <p>Every product, every batch — held to global standards.</p>
+    <span class="page-hero-bg">Clarevix</span>
+  </section>
+
+  <div class="cert-grid">
+    {
+      certificates.map((c) => (
+        <div class="cert-card">
+          <div class="cert-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2L3 7V12C3 17 6.5 21 12 22C17.5 21 21 17 21 12V7L12 2Z"
+                stroke="#8FAF8A"
+                stroke-width="1.5"
+                fill="none"
+              />
+              <path d="M9 12L11 14L15 10" stroke="#8FAF8A" stroke-width="1.5" />
+            </svg>
+          </div>
+          <div class="cert-body">
+            <h3>{c.name}</h3>
+            <p>{c.desc}</p>
+            <span class="cert-badge">{c.badge}</span>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+
+  <section class="standards">
+    <div class="standards-inner">
+      <p class="label">Our Manufacturing Standards</p>
+      <p
+        style="font-size:16px;color:var(--text-secondary);line-height:1.7;max-width:680px;margin-bottom:8px"
+      >
+        Clean luxury isn't a marketing claim — it's the operational reality of how we make every
+        product. Here's what that means in practice.
+      </p>
+      <div class="standards-grid">
+        {
+          standards.map((s) => (
+            <div class="standard-item">
+              <p class="standard-num">{s.num}</p>
+              <p class="standard-name">{s.name}</p>
+              <p class="standard-desc">{s.desc}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>

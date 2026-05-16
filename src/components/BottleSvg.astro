@@ -1,0 +1,138 @@
+---
+import type { ProductCategory } from '@lib/types';
+
+interface Props {
+  category: ProductCategory;
+}
+
+const { category } = Astro.props;
+
+// Color tokens used by the bottle SVGs
+const fillByCat: Record<ProductCategory, string> = {
+  Facewash: '#2C2620',
+  Serum: '#2C2620',
+  Moisturizer: '#2C2620',
+  Sunscreen: '#2C2620',
+  Mask: '#2C2620',
+  Shampoo: '#332B24',
+  Oil: '#332B24',
+  Tonic: '#2C2620',
+};
+const fill = fillByCat[category];
+---
+
+{
+  category === 'Facewash' && (
+    <svg width="60" height="148" viewBox="0 0 60 148">
+      <rect x="20" y="0" width="20" height="14" rx="7" fill="#8FAF8A" opacity="0.65" />
+      <rect x="10" y="14" width="40" height="118" rx="9" fill={fill} />
+      <rect x="10" y="118" width="40" height="14" rx="4" fill="#1E1A17" />
+      <rect x="14" y="14" width="11" height="118" rx="5" fill="rgba(143,175,138,0.07)" />
+      <rect x="16" y="80" width="28" height="1.5" fill="#C4A882" opacity="0.55" />
+    </svg>
+  )
+}
+{
+  category === 'Serum' && (
+    <svg width="48" height="158" viewBox="0 0 48 158">
+      <rect x="18" y="0" width="12" height="9" rx="3" fill="#8FAF8A" opacity="0.75" />
+      <rect x="15" y="9" width="18" height="26" rx="2" fill="#8FAF8A" opacity="0.5" />
+      <rect x="6" y="35" width="36" height="117" rx="7" fill={fill} />
+      <rect
+        x="6"
+        y="35"
+        width="36"
+        height="117"
+        rx="7"
+        fill="none"
+        stroke="#8FAF8A"
+        stroke-width="0.8"
+        opacity="0.25"
+      />
+      <rect x="10" y="35" width="10" height="117" rx="4" fill="rgba(143,175,138,0.07)" />
+      <rect x="11" y="106" width="26" height="1.5" fill="#C4A882" opacity="0.55" />
+    </svg>
+  )
+}
+{
+  category === 'Moisturizer' && (
+    <svg width="115" height="82" viewBox="0 0 115 82">
+      <ellipse cx="57" cy="18" rx="48" ry="17" fill="#8FAF8A" opacity="0.5" />
+      <rect x="9" y="18" width="97" height="52" rx="7" fill={fill} />
+      <ellipse cx="57" cy="70" rx="48" ry="13" fill="#1E1A17" />
+      <rect x="35" y="44" width="44" height="1.5" fill="#C4A882" opacity="0.55" />
+    </svg>
+  )
+}
+{
+  category === 'Sunscreen' && (
+    <svg width="60" height="142" viewBox="0 0 60 142">
+      <rect x="20" y="0" width="20" height="14" rx="7" fill="#C4A882" opacity="0.65" />
+      <rect x="9" y="14" width="42" height="116" rx="8" fill={fill} />
+      <rect x="9" y="116" width="42" height="14" rx="4" fill="#1E1A17" />
+      <rect x="15" y="76" width="30" height="1.5" fill="#C4A882" opacity="0.55" />
+    </svg>
+  )
+}
+{
+  category === 'Mask' && (
+    <svg width="112" height="78" viewBox="0 0 112 78">
+      <ellipse cx="56" cy="17" rx="46" ry="16" fill="#8FAF8A" opacity="0.5" />
+      <rect x="10" y="17" width="92" height="50" rx="7" fill={fill} />
+      <ellipse cx="56" cy="67" rx="46" ry="13" fill="#1E1A17" />
+      <rect x="32" y="42" width="48" height="1.5" fill="#C4A882" opacity="0.55" />
+    </svg>
+  )
+}
+{
+  category === 'Shampoo' && (
+    <svg width="60" height="146" viewBox="0 0 60 146">
+      <rect x="20" y="0" width="20" height="14" rx="7" fill="#8FAF8A" opacity="0.65" />
+      <rect x="10" y="14" width="40" height="118" rx="9" fill={fill} />
+      <rect x="10" y="118" width="40" height="14" rx="4" fill="#1E1A17" />
+      <rect x="16" y="78" width="28" height="1.5" fill="#C4A882" opacity="0.55" />
+    </svg>
+  )
+}
+{
+  category === 'Oil' && (
+    <svg width="44" height="150" viewBox="0 0 44 150">
+      <rect x="16" y="0" width="12" height="9" rx="3" fill="#8FAF8A" opacity="0.7" />
+      <rect x="13" y="9" width="18" height="22" rx="2" fill="#8FAF8A" opacity="0.45" />
+      <rect x="4" y="31" width="36" height="114" rx="6" fill={fill} />
+      <rect
+        x="4"
+        y="31"
+        width="36"
+        height="114"
+        rx="6"
+        fill="none"
+        stroke="#C4A882"
+        stroke-width="0.8"
+        opacity="0.3"
+      />
+      <rect x="9" y="96" width="26" height="1.5" fill="#C4A882" opacity="0.6" />
+    </svg>
+  )
+}
+{
+  category === 'Tonic' && (
+    <svg width="46" height="150" viewBox="0 0 46 150">
+      <rect x="16" y="0" width="14" height="11" rx="3" fill="#8FAF8A" opacity="0.7" />
+      <rect x="13" y="11" width="20" height="24" rx="2" fill="#8FAF8A" opacity="0.45" />
+      <rect x="5" y="35" width="36" height="110" rx="7" fill={fill} />
+      <rect
+        x="5"
+        y="35"
+        width="36"
+        height="110"
+        rx="7"
+        fill="none"
+        stroke="#8FAF8A"
+        stroke-width="0.8"
+        opacity="0.18"
+      />
+      <rect x="9" y="94" width="28" height="1.5" fill="#C4A882" opacity="0.55" />
+    </svg>
+  )
+}

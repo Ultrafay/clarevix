@@ -1,0 +1,79 @@
+---
+const currentPath = Astro.url.pathname;
+const isActive = (path: string) =>
+  path === '/' ? currentPath === '/' : currentPath.startsWith(path);
+---
+
+<nav id="navbar" class="nav-bar">
+  <a href="/" class="nav-logo">Clarevix</a>
+  <ul class="nav-menu">
+    <li><a href="/" aria-current={isActive('/') ? 'page' : undefined}>Home</a></li>
+    <li class="dropdown">
+      <a href="/products" aria-current={isActive('/products') ? 'page' : undefined}>Products</a>
+      <div class="dropdown-menu">
+        <div class="dropdown-col">
+          <p class="dropdown-col-title">Face Care</p>
+          <ul>
+            <li><a href="/products?cat=Moisturizer">Moisturizer</a></li>
+            <li><a href="/products?cat=Serum">Serums</a></li>
+            <li><a href="/products?cat=Sunscreen">Sunscreens</a></li>
+            <li><a href="/products?cat=Mask">Masks</a></li>
+            <li><a href="/products?cat=Facewash">Facewash</a></li>
+          </ul>
+        </div>
+        <div class="dropdown-col">
+          <p class="dropdown-col-title">Hair Care</p>
+          <ul>
+            <li><a href="/products?cat=Shampoo">Shampoo</a></li>
+            <li><a href="/products?cat=Oil">Hair Oil</a></li>
+            <li><a href="/products?cat=Tonic">Hair Tonic</a></li>
+          </ul>
+        </div>
+      </div>
+    </li>
+    <li>
+      <a href="/certificates" aria-current={isActive('/certificates') ? 'page' : undefined}>
+        Certificates
+      </a>
+    </li>
+    <li>
+      <a href="/contact" aria-current={isActive('/contact') ? 'page' : undefined}>Contact</a>
+    </li>
+  </ul>
+  <div class="nav-actions">
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+      <svg
+        class="icon-moon"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"></path>
+      </svg>
+      <svg
+        class="icon-sun"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="12" cy="12" r="4"></circle>
+        <path
+          d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+        ></path>
+      </svg>
+    </button>
+    <button class="cart-btn" id="cartBtn">
+      Cart
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>

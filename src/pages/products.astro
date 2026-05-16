@@ -1,0 +1,96 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import ProductCard from '@components/ProductCard.astro';
+import { fetchProducts } from '@lib/supabase';
+import { SEED_PRODUCTS } from '@lib/seed-products';
+import { PRODUCT_CATEGORIES } from '@lib/types';
+
+const dbProducts = await fetchProducts();
+const products = dbProducts.length ? dbProducts : SEED_PRODUCTS;
+
+// Get the requested category from URL ?cat=
+const requestedCat = Astro.url.searchParams.get('cat');
+const activeCat = requestedCat ?? 'All';
+---
+
+<BaseLayout title="All Products — Clarevix" description="Shop the full Clarevix collection.">
+  <section class="page-hero">
+    <p class="page-hero-eyebrow">Our Collection</p>
+    <h1>All Products</h1>
+    <p>Clinically active, beautifully crafted skincare and hair care.</p>
+    <span class="page-hero-bg">Clarevix</span>
+  </section>
+
+  <div class="filter-bar" id="filterBar">
+    <button
+      class="filter-btn"
+      class:list={[{ active: activeCat === 'All' }]}
+      data-filter="All"
+      type="button"
+    >
+      All ({products.length})
+    </button>
+    {
+      PRODUCT_CATEGORIES.map((c) => {
+        const count = products.filter((p) => p.cat === c.value).length;
+        if (count === 0) return null;
+        return (
+          <button
+            class="filter-btn"
+            class:list={[{ active: activeCat === c.value }]}
+            data-filter={c.value}
+            type="button"
+          >
+            {c.label} ({count})
+          </button>
+        );
+      })
+    }
+  </div>
+
+  <section class="products-section">
+    <div class="products-grid" id="productsGrid">
+      {products.map((p) => <ProductCard product={p} variant="full" data-category={p.cat} />)}
+    </div>
+    <p id="emptyMessage" class="empty-state" style="display:none;grid-column:1/-1">
+      <strong>No products in this category yet.</strong><br />
+      Check back soon, or browse another category.
+    </p>
+  </section>
+</BaseLayout>
+
+<script>
+  /* Client-side filtering — set initial state from URL, then react to button clicks */
+  const grid = document.getElementById('productsGrid');
+  const filterBar = document.getElementById('filterBar');
+  const emptyMsg = document.getElementById('emptyMessage');
+
+  function applyFilter(cat: string) {
+    if (!grid) return;
+    let visible = 0;
+    grid.querySelectorAll<HTMLElement>('[data-category]').forEach((card) => {
+      const matches = cat === 'All' || card.dataset.category === cat;
+      card.style.display = matches ? '' : 'none';
+      if (matches) visible++;
+    });
+    if (emptyMsg) emptyMsg.style.display = visible === 0 ? 'block' : 'none';
+
+    // Sync URL without reload
+    const url = new URL(window.location.href);
+    if (cat === 'All') url.searchParams.delete('cat');
+    else url.searchParams.set('cat', cat);
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  filterBar?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.filter-btn') as HTMLButtonElement | null;
+    if (!btn?.dataset.filter) return;
+    filterBar.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter(btn.dataset.filter);
+  });
+
+  /* If URL had ?cat=X on page load, ensure filtering is applied (cards may still be hidden via display:none from SSR) */
+  const initialCat = new URLSearchParams(window.location.search).get('cat');
+  if (initialCat) applyFilter(initialCat);
+</script>
